@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h3 class="mb-0 text-center">Bun venit, {{ producator.nume }}!</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Email:</strong> {{ producator.email }}</p>
+                <p><strong>Telefon:</strong> {{ producator.nrTelefon }}</p>
+                <p><strong>Descriere:</strong> {{ producator.descriere }}</p>
+                <p><strong>Coordonate:</strong> {{ producator.latitudine }}, {{ producator.longitudine }}</p>
+                <a href="{% url 'producator_logout' %}" class="btn btn-danger mt-3">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

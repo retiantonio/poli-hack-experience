@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Acasă{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <div class="card shadow p-4">
+            <h1 class="mb-3">Bine ai venit la aplicația Producatori!</h1>
+            <p class="mb-4">Autentifică-te sau înregistrează-te pentru a începe.</p>
+            <a href="{% url 'producator_login' %}" class="btn btn-primary me-2">Login</a>
+            <a href="{% url 'producator_register' %}" class="btn btn-success">Register</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

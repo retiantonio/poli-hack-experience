@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Login Producator{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0 text-center">Login Producator</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+                <p class="mt-3 text-center">
+                    Nu ai cont? <a href="{% url 'producator_register' %}">Înregistrează-te aici</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
