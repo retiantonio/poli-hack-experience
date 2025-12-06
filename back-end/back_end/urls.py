@@ -27,3 +27,5 @@ urlpatterns = [
     path('user/', UserProfileAPI.as_view(), name='user_data'),
     path('locations/', LocationListAPI.as_view(), name='locations'),
 ]
+
+

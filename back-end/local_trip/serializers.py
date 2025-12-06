@@ -2,6 +2,8 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 
+from django.db import transaction
+
 from .models import Location
 from .users.models import CustomUser, SellerProfile, TouristProfile
 ######################################################
@@ -25,23 +27,30 @@ class LoginSerializer(serializers.Serializer):
 ########################################################################################
 # 2. REGISTRATION SERIALIZER (Input)
 class RegistrationSerializer(serializers.ModelSerializer):
-    """
-    Creates a new CustomUser.
-    Note: We don't create the Profile here because SIGNALS.PY does it automatically!
-    """
+
     password = serializers.CharField(write_only=True, min_length=8)
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email','password', 'role')
+        fields = ('username', 'email','password', 'role',
+                  'description', 'latitude', 'longitude',
+                  'phone_number', 'product_type')
+
 
     def create(self, validated_data):
-        user = CustomUser.objects.create_user(
-            username=validated_data['username'],  # <--- ADD THIS
-            email=validated_data.get('email'),  # Email is now optional/secondary
-            password=validated_data['password'],
-            role=validated_data['role']
-        )
+        profile_data = {}
+        for key in ['description', 'latitude', 'longitude', 'phone_number', 'product_type']:
+            if key in validated_data:
+                profile_data[key] = validated_data.pop(key)
+
+        with transaction.atomic():
+            user = CustomUser.objects.create_user(**validated_data)
+
+            if user.role == 'SELLER':
+                if profile_data:
+                    SellerProfile.objects.filter(user=user).update(**profile_data)
+
+            # elif user.role == 'TOURIST':
         return user
 
 #############################################################################################
