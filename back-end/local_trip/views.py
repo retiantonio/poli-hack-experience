@@ -42,3 +42,48 @@ def get_optimized_route(request):
 
     return Response(json_ready_list)
 
+from rest_framework import viewsets, generics
+from .models import Categorii, Producatori
+from .serializers import CategoriiSerializer, ProducatoriSerializer
+from rest_framework.authtoken.models import Token
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+# Listare categorii
+class CategoriiViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Categorii.objects.all()
+    serializer_class = CategoriiSerializer
+
+# Register producator
+@method_decorator(csrf_exempt, name='dispatch')
+class RegisterProducatorView(generics.CreateAPIView):
+    serializer_class = ProducatoriSerializer
+
+    def perform_create(self, serializer):
+        producator = serializer.save()
+        id_categorie = self.request.data.get('idCategorie')
+        if id_categorie:
+            try:
+                categorie = Categorii.objects.get(id=id_categorie)
+                producator.categorii.add(categorie)
+            except Categorii.DoesNotExist:
+                pass
+
+# Login producator cu token
+@csrf_exempt
+@api_view(['POST'])
+def login_producator(request):
+    email = request.data.get('email')
+    parola = request.data.get('parola')
+    try:
+        producator = Producatori.objects.get(email=email, parola=parola)
+        # returnăm token pentru persistenta loginului
+        token, created = Token.objects.get_or_create(user=producator)
+        return Response({
+            "id": producator.id,
+            "nume": producator.nume,
+            "email": producator.email,
+            "token": token.key
+        })
+    except Producatori.DoesNotExist:
+        return Response({"error": "Email sau parola invalide"}, status=400)
