@@ -1,98 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:frontend/main.dart';
+import 'login_page.dart'; 
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
 
-  // --------------------- LOGICA LOGIN ---------------------
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    final loginData = {
-      "username": _usernameController.text.trim(),
-      "password": _passwordController.text.trim(),
-    };
-
-    final url = Uri.parse("http://172.20.10.2:8000/login/"); // ENDPOINT LOGIN
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(loginData),
-      );
-
-      print("Status: ${response.statusCode}");
-      print("Body: ${response.body}");
-
-      setState(() => _isLoading = false);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final userMap = data["user"] ?? {};
-        final username = userMap["username"] ?? "User";
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString("username", username);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Login successful!"),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.pop(context, true); // trimitem true la MainMenu
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-
+  void _signUp() {
+    if (_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Connection error: $e"),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Signing up...')),
       );
     }
   }
 
-  void _goToSignUp() {
-    Navigator.push(
+  void _goToLogin() {
+    Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => Placeholder()),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
 
-  // --------------------- BUILD UI ---------------------
   @override
   Widget build(BuildContext context) {
     const double fieldWidth = 300;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0C3B2E),
-      appBar: AppBar(
-        title: const Text("Login"),
-        backgroundColor: const Color(0xFF0C3B2E),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: Center(
         child: SingleChildScrollView(
           child: Form(
@@ -130,16 +72,9 @@ class _LoginPageState extends State<LoginPage> {
                       hintStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const SizedBox(
                         width: 24,
-                        child: Icon(
-                          Icons.person,
-                          color: Colors.white70,
-                          size: 20,
-                        ),
+                        child: Icon(Icons.person, color: Colors.white70, size: 20),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 12,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.white),
@@ -150,16 +85,56 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.white,
-                          width: 2,
-                        ),
+                        borderSide: const BorderSide(color: Colors.white, width: 2),
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter username';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Email field
+                SizedBox(
+                  width: fieldWidth,
+                  child: TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFF2E523D),
+                      hintText: 'Email',
+                      hintStyle: const TextStyle(color: Colors.white70),
+                      prefixIcon: const SizedBox(
+                        width: 24,
+                        child: Icon(Icons.email, color: Colors.white70, size: 20),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                      ),
+                    ),
+                    style: const TextStyle(color: Colors.white),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter email';
+                      }
+                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                        return 'Enter a valid email';
                       }
                       return null;
                     },
@@ -180,16 +155,9 @@ class _LoginPageState extends State<LoginPage> {
                       hintStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const SizedBox(
                         width: 24,
-                        child: Icon(
-                          Icons.vpn_key,
-                          color: Colors.white70,
-                          size: 20,
-                        ),
+                        child: Icon(Icons.vpn_key, color: Colors.white70, size: 20),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 12,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.white),
@@ -200,16 +168,16 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.white,
-                          width: 2,
-                        ),
+                        borderSide: const BorderSide(color: Colors.white, width: 2),
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter password';
+                      }
+                      if (value.length < 6) {
+                        return 'Password must be at least 6 characters';
                       }
                       return null;
                     },
@@ -221,13 +189,13 @@ class _LoginPageState extends State<LoginPage> {
                 TextButton(
                   onPressed: () {},
                   child: const Text(
-                    'Having problems logging in? Contact us.',
+                    'Having problems signing up? Contact us.',
                     style: TextStyle(color: Colors.white70),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Login button cu gradient
+                // Sign Up button cu gradient
                 SizedBox(
                   width: fieldWidth,
                   child: Material(
@@ -236,26 +204,22 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF6D9773), Color(0xFFA7C0AB)],
+                          colors: [
+                            Color(0xFF6D9773),
+                            Color(0xFFA7C0AB),
+                          ],
                         ),
                       ),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: _isLoading ? null : _login,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        onTap: _signUp,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
                           child: Center(
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                : const Text(
-                                    'Login',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                    ),
-                                  ),
+                            child: Text(
+                              'Sign Up',
+                              style: TextStyle(color: Colors.white, fontSize: 18),
+                            ),
                           ),
                         ),
                       ),
@@ -264,19 +228,19 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 16),
 
-                // Link Register cu cursor de mana
+                // Link Login
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      "Don't have an account? ",
+                      'Already have an account? ',
                       style: TextStyle(color: Colors.white70),
                     ),
                     InkWell(
-                      onTap: _goToSignUp,
+                      onTap: _goToLogin,
                       mouseCursor: SystemMouseCursors.click,
                       child: const Text(
-                        'Register here',
+                        'Login here',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
