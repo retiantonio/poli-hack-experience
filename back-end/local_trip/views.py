@@ -2,8 +2,16 @@ from cmath import isfinite
 
 from django.shortcuts import render
 from rest_framework.decorators import api_view
+from rest_framework import permissions, generics
 from rest_framework.response import Response
 from .core import PoisGenerator, RouteOptimizer
+
+from knox.models import AuthToken
+from .serializers import (
+    LoginSerializer,
+    RegistrationSerializer,
+    UserDataSerializer
+)
 
 import math
 
@@ -42,48 +50,60 @@ def get_optimized_route(request):
 
     return Response(json_ready_list)
 
-from rest_framework import viewsets, generics
-from .models import Categorii, Producatori
-from .serializers import CategoriiSerializer, ProducatoriSerializer
-from rest_framework.authtoken.models import Token
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
+# LOGIN AND USER SIDED VIEWS
 
-# Listare categorii
-class CategoriiViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Categorii.objects.all()
-    serializer_class = CategoriiSerializer
+    # 1. REGISTRATION API
+class RegisterAPI(generics.GenericAPIView):
+    serializer_class = RegistrationSerializer
 
-# Register producator
-@method_decorator(csrf_exempt, name='dispatch')
-class RegisterProducatorView(generics.CreateAPIView):
-    serializer_class = ProducatoriSerializer
+    def post(self, request, *args, **kwargs):
+        # 1. Validate Input (The 'Bouncer' check)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-    def perform_create(self, serializer):
-        producator = serializer.save()
-        id_categorie = self.request.data.get('idCategorie')
-        if id_categorie:
-            try:
-                categorie = Categorii.objects.get(id=id_categorie)
-                producator.categorii.add(categorie)
-            except Categorii.DoesNotExist:
-                pass
+        # 2. Save User (This triggers signals.py automatically!)
+        user = serializer.save()
 
-# Login producator cu token
-@csrf_exempt
-@api_view(['POST'])
-def login_producator(request):
-    email = request.data.get('email')
-    parola = request.data.get('parola')
-    try:
-        producator = Producatori.objects.get(email=email, parola=parola)
-        # returnăm token pentru persistenta loginului
-        token, created = Token.objects.get_or_create(user=producator)
+        # 3. Create Token
+        # AuthToken.objects.create returns a tuple (instance, token). We only need the token.
+        _, token = AuthToken.objects.create(user)
+
+        # 4. Return Response
+        # We use UserDataSerializer here so Flutter gets the full profile structure immediately
         return Response({
-            "id": producator.id,
-            "nume": producator.nume,
-            "email": producator.email,
-            "token": token.key
+            "user": UserDataSerializer(user, context=self.get_serializer_context()).data,
+            "token": token
         })
-    except Producatori.DoesNotExist:
-        return Response({"error": "Email sau parola invalide"}, status=400)
+
+
+    # 2. LOGIN API
+class LoginAPI(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        # 1. Validate Email/Password
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # 2. Get the User object from the serializer
+        user = serializer.validated_data['user']
+
+        # 3. Create Token
+        _, token = AuthToken.objects.create(user)
+
+        # 4. Return User Data + Token
+        return Response({
+            "user": UserDataSerializer(user, context=self.get_serializer_context()).data,
+            "token": token
+        })
+
+
+    # 3. USER DATA API (The Persistence Fetcher)
+class UserProfileAPI(generics.RetrieveAPIView):
+    # This ensures only logged-in users with a valid token can access this
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserDataSerializer
+
+    def get_object(self):
+        # Automatically looks up the user associated with the token in the header
+        return self.request.user

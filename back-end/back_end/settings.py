@@ -38,8 +38,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'local_trip',
 
+    'knox',
     'rest_framework.authtoken',
-    'corsheaders',
 ]
 
 MIDDLEWARE = [

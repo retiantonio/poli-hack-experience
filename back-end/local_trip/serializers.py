@@ -1,42 +1,82 @@
+# serializers.py
 from rest_framework import serializers
-from .models import Producatori, Categorii, Produse, ProducatoriCategorii
-from rest_framework.authtoken.models import Token
+from .users.models import CustomUser, SellerProfile, TouristProfile
 
-class CategoriiSerializer(serializers.ModelSerializer):
+# 1. LOGIN SERIALIZER (Input)
+class LoginSerializer(serializers.Serializer):
+    """
+    Checks if the email and password match.
+    Does not save anything to the database.
+    """
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get('email')
+        password = data.get('password')
+
+        if email and password:
+            # This authenticates against the CustomUser table
+            user = authenticate(request=self.context.get('request'),
+                                username=email, password=password)
+
+            if not user:
+                raise serializers.ValidationError("Invalid email or password.")
+        else:
+            raise serializers.ValidationError("Must include 'email' and 'password'.")
+
+        data['user'] = user
+        return data
+########################################################################################
+# 2. REGISTRATION SERIALIZER (Input)
+class RegistrationSerializer(serializers.ModelSerializer):
+    """
+    Creates a new CustomUser.
+    Note: We don't create the Profile here because SIGNALS.PY does it automatically!
+    """
+    password = serializers.CharField(write_only=True, min_length=8)
+
     class Meta:
-        model = Categorii
-        fields = ['id', 'tip']
-
-class ProduseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Produse
-        fields = ['id', 'nume', 'pret']
-
-class ProducatoriSerializer(serializers.ModelSerializer):
-    produse = ProduseSerializer(many=True, read_only=True)
-    categorii = serializers.PrimaryKeyRelatedField(
-        queryset=Categorii.objects.all(), many=True, write_only=True
-    )
-
-    class Meta:
-        model = Producatori
-        fields = ['id', 'nume', 'email', 'parola', 'nrTelefon', 'descriere',
-                  'latitudine', 'longitudine', 'categorii', 'produse']
+        model = CustomUser
+        fields = ('email', 'password', 'role')
 
     def create(self, validated_data):
-        categorii_data = validated_data.pop('categorii', [])
-        produse_data = validated_data.pop('produse', [])
+        # We must use create_user to ensure the password is HASHED securely
+        user = CustomUser.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            role=validated_data['role']
+        )
+        return user
 
-        producator = Producatori.objects.create(**validated_data)
+#############################################################################################
+# 3. OUTPUT
+class SellerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SellerProfile
+        fields = ['description', 'latitude', 'longitude', 'phone_number']
 
-        for categorie in categorii_data:
-            ProducatoriCategorii.objects.create(idProducator=producator, idCategorie=categorie)
 
-        for produs in produse_data:
-            Produse.objects.create(idProducator=producator, **produs)
+class TouristProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TouristProfile
+        fields = []
 
-        # Cream token automat
-        from rest_framework.authtoken.models import Token
-        Token.objects.create(user=producator)
 
-        return producator
+class UserDataSerializer(serializers.ModelSerializer):
+    # We define both, but only one will be populated per user
+    seller_profile = SellerProfileSerializer(read_only=True)
+    tourist_profile = TouristProfileSerializer(read_only=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'email', 'role', 'seller_profile', 'tourist_profile']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.role == 'SELLER':
+            data.pop('tourist_profile')  # Remove tourist data for sellers
+        elif instance.role == 'TOURIST':
+            data.pop('seller_profile')  # Remove seller data for tourists
+        return data
+
