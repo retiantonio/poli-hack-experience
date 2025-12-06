@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework import permissions, generics
 from rest_framework.response import Response
 from .core import PoisGenerator, RouteOptimizer
+import json
 
 from knox.models import AuthToken
 from .serializers import (
@@ -82,6 +83,14 @@ class LoginAPI(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         # 1. Validate Email/Password
+
+        # === DEBUGGING START ===
+        print("------------------------------------------------")
+        print("📢 RECEIVED REQUEST DATA:")
+        print(request.data)  # This prints the parsed JSON as a Python dict
+        print("------------------------------------------------")
+        # === DEBUGGING END ===
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -91,11 +100,21 @@ class LoginAPI(generics.GenericAPIView):
         # 3. Create Token
         _, token = AuthToken.objects.create(user)
 
-        # 4. Return User Data + Token
-        return Response({
-            "user": UserDataSerializer(user, context=self.get_serializer_context()).data,
+        user_data = UserDataSerializer(user, context=self.get_serializer_context()).data
+
+        response_data = {
+            "user": user_data,
             "token": token
-        })
+        }
+
+        # 2. PRINT IT TO THE TERMINAL (Pretty printed)
+        print("------------------------------------------------")
+        print("📦 SENDING TO FLUTTER:")
+        print(json.dumps(response_data, indent=4, default=str))
+        print("------------------------------------------------")
+
+        # 3. Send it
+        return Response(response_data)
 
 
     # 3. USER DATA API (The Persistence Fetcher)

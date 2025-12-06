@@ -43,8 +43,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -55,6 +53,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'back_end.urls'
+
+AUTH_USER_MODEL = 'local_trip.CustomUser'
 
 TEMPLATES = [
     {
@@ -81,15 +81,11 @@ WSGI_APPLICATION = 'back_end.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'travel',
-        'USER': 'root',
-        'PASSWORD': 'root',
-        'HOST': '10.42.2.49',
+        'NAME': 'my_flutter_db',  # <--- The name you just created
+        'USER': 'root',           # Your MySQL username
+        'PASSWORD': '13072004',   # Your MySQL password
+        'HOST': 'localhost',
         'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'use_unicode': True,
-        },
     }
 }
 

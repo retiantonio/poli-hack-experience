@@ -1,5 +1,6 @@
 # serializers.py
 from rest_framework import serializers
+from django.contrib.auth import authenticate
 from .users.models import CustomUser, SellerProfile, TouristProfile
 
 # 1. LOGIN SERIALIZER (Input)
@@ -8,25 +9,17 @@ class LoginSerializer(serializers.Serializer):
     Checks if the email and password match.
     Does not save anything to the database.
     """
-    email = serializers.EmailField()
+    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        email = data.get('email')
-        password = data.get('password')
+        # Authenticate now uses the default behavior (checks username)
+        user = authenticate(username=data['username'], password=data['password'])
 
-        if email and password:
-            # This authenticates against the CustomUser table
-            user = authenticate(request=self.context.get('request'),
-                                username=email, password=password)
+        if user and user.is_active:
+            return {'user': user}
+        raise serializers.ValidationError("Invalid Credentials")
 
-            if not user:
-                raise serializers.ValidationError("Invalid email or password.")
-        else:
-            raise serializers.ValidationError("Must include 'email' and 'password'.")
-
-        data['user'] = user
-        return data
 ########################################################################################
 # 2. REGISTRATION SERIALIZER (Input)
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -38,12 +31,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('email', 'password', 'role')
+        fields = ('username', 'email','password', 'role')
 
     def create(self, validated_data):
-        # We must use create_user to ensure the password is HASHED securely
         user = CustomUser.objects.create_user(
-            email=validated_data['email'],
+            username=validated_data['username'],  # <--- ADD THIS
+            email=validated_data.get('email'),  # Email is now optional/secondary
             password=validated_data['password'],
             role=validated_data['role']
         )
