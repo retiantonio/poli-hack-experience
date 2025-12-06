@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/widgets/map.dart';
 import 'package:frontend/services/route_service.dart';
 
@@ -22,19 +23,19 @@ class _MapScreenState extends State<MapScreen>
   double lonLeft = 0;
   double lonRight = 0;
 
-  // Dimensiunea virtuală a hărții (mare pentru detalii)
   final double mapWidth = 2000;
   final double mapHeight = 2000;
 
-  // Animație pentru ring
   late AnimationController _ringController;
   Animation<double>? _ringAnimation;
+
+  String? username;
 
   @override
   void initState() {
     super.initState();
+    _loadUsername();
 
-    // Inițializează animația pentru ring
     _ringController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -71,20 +72,26 @@ class _MapScreenState extends State<MapScreen>
         });
   }
 
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      username = prefs.getString("username");
+    });
+  }
+
   @override
   void dispose() {
     _ringController.dispose();
     super.dispose();
   }
 
-  // Găsește indexul primei locații nevizitate
   int get currentWaypointIndex {
     for (int i = 0; i < waypoints.length; i++) {
       if (!visited[waypoints[i]["name"]]!) {
         return i;
       }
     }
-    return -1; // Toate vizitate
+    return -1;
   }
 
   Offset latLonToPixel(double lat, double lon) {
@@ -100,7 +107,35 @@ class _MapScreenState extends State<MapScreen>
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Map Zoom & Pan")),
+      appBar: AppBar(
+        title: const Text("Map Zoom & Pan"),
+        actions: [
+          if (username != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, size: 20, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      username!,
+                      style: const TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
       body: InteractiveViewer(
         minScale: 0.5,
         maxScale: 4.0,
@@ -111,7 +146,6 @@ class _MapScreenState extends State<MapScreen>
           height: mapHeight,
           child: Stack(
             children: [
-              // Harta
               Image.asset(
                 "assets/map.jpg",
                 width: mapWidth,
@@ -119,7 +153,6 @@ class _MapScreenState extends State<MapScreen>
                 fit: BoxFit.fill,
               ),
 
-              // Linii care conectează waypoint-urile
               CustomPaint(
                 size: Size(mapWidth, mapHeight),
                 painter: RoutePainter(
@@ -128,7 +161,6 @@ class _MapScreenState extends State<MapScreen>
                 ),
               ),
 
-              // Ring animat pentru locația curentă
               if (currentWaypointIndex >= 0 && _ringAnimation != null)
                 AnimatedBuilder(
                   animation: _ringAnimation!,
@@ -141,10 +173,9 @@ class _MapScreenState extends State<MapScreen>
 
                     return Stack(
                       children: [
-                        // Ring din spate (umbră 3D)
                         Positioned(
                           left: offset.dx - 55,
-                          top: offset.dy - 45, // 5px mai jos
+                          top: offset.dy - 45,
                           child: Container(
                             width: 110,
                             height: 110,
@@ -157,7 +188,6 @@ class _MapScreenState extends State<MapScreen>
                             ),
                           ),
                         ),
-                        // Ring din față
                         Positioned(
                           left: offset.dx - 55,
                           top: offset.dy - 50,
@@ -178,7 +208,6 @@ class _MapScreenState extends State<MapScreen>
                   },
                 ),
 
-              // Butoanele waypoint
               ...waypoints.map((wp) {
                 final offset = latLonToPixel(wp["lat"], wp["lon"]);
                 bool isProducer = wp["type"] == "vendor";
@@ -204,7 +233,6 @@ class _MapScreenState extends State<MapScreen>
   }
 }
 
-// Painter pentru a desena liniile rutei
 class RoutePainter extends CustomPainter {
   final List<Map<String, dynamic>> waypoints;
   final Offset Function(double lat, double lon) latLonToPixel;
@@ -221,7 +249,6 @@ class RoutePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    // Desenează curbe între fiecare pereche consecutivă
     for (int i = 0; i < waypoints.length - 1; i++) {
       final start = latLonToPixel(waypoints[i]["lat"], waypoints[i]["lon"]);
       final end = latLonToPixel(
@@ -229,23 +256,19 @@ class RoutePainter extends CustomPainter {
         waypoints[i + 1]["lon"],
       );
 
-      // Calculează punctul de control pentru curbă
       final midX = (start.dx + end.dx) / 2;
       final midY = (start.dy + end.dy) / 2;
 
-      // Vector perpendicular pentru offset-ul curbei
       final dx = end.dx - start.dx;
       final dy = end.dy - start.dy;
       final length = sqrt(dx * dx + dy * dy);
 
-      // Offset perpendicular (20% din distanță)
       final offsetAmount = length * 0.15;
       final perpX = -dy / length * offsetAmount;
       final perpY = dx / length * offsetAmount;
 
       final controlPoint = Offset(midX + perpX, midY + perpY);
 
-      // Desenează curba quadratică
       final path = Path();
       path.moveTo(start.dx, start.dy);
       path.quadraticBezierTo(controlPoint.dx, controlPoint.dy, end.dx, end.dy);

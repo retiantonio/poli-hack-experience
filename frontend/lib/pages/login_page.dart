@@ -28,7 +28,7 @@ class _LoginPageState extends State<LoginPage> {
       "password": _passwordController.text.trim(),
     };
 
-    final url = Uri.parse("http://10.42.2.49:8000/login/"); // ENDPOINT LOGIN
+    final url = Uri.parse("http://172.20.10.2:8000/login/"); // ENDPOINT LOGIN
 
     try {
       final response = await http.post(
@@ -44,14 +44,11 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final userMap = data["user"] ?? {};
+        final username = userMap["username"] ?? "User";
 
-        final accessToken = data["access"];
-        final refreshToken = data["refresh"];
-
-        // Salvăm token-urile
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString("access_token", accessToken);
-        await prefs.setString("refresh_token", refreshToken);
+        await prefs.setString("username", username);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -60,17 +57,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainMenu()),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Login failed: ${response.statusCode}"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        Navigator.pop(context, true);
       }
     } catch (e) {
       setState(() => _isLoading = false);
