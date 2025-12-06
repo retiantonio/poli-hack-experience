@@ -1,8 +1,10 @@
 # serializers.py
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .users.models import CustomUser, SellerProfile, TouristProfile
 
+from .models import Location
+from .users.models import CustomUser, SellerProfile, TouristProfile
+######################################################
 # 1. LOGIN SERIALIZER (Input)
 class LoginSerializer(serializers.Serializer):
     """
@@ -55,7 +57,6 @@ class TouristProfileSerializer(serializers.ModelSerializer):
         model = TouristProfile
         fields = []
 
-
 class UserDataSerializer(serializers.ModelSerializer):
     # We define both, but only one will be populated per user
     seller_profile = SellerProfileSerializer(read_only=True)
@@ -72,4 +73,9 @@ class UserDataSerializer(serializers.ModelSerializer):
         elif instance.role == 'TOURIST':
             data.pop('seller_profile')  # Remove seller data for tourists
         return data
-
+##################################################################
+# 4.Location Serializer
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'name', 'latitude', 'longitude','image_url', 'radius']

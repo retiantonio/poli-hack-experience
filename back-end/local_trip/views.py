@@ -11,12 +11,12 @@ from knox.models import AuthToken
 from .serializers import (
     LoginSerializer,
     RegistrationSerializer,
-    UserDataSerializer
+    UserDataSerializer, LocationSerializer
 )
 
 import math
 
-from .models import ObjectiveNode, MapNode, Trip
+from .models import ObjectiveNode, MapNode, Trip, Location
 
 
 # Create your views here.
@@ -126,3 +126,8 @@ class UserProfileAPI(generics.RetrieveAPIView):
     def get_object(self):
         # Automatically looks up the user associated with the token in the header
         return self.request.user
+
+    # 4. LOCATION DATA API (For Persistance)
+class LocationListAPI(generics.ListAPIView):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer

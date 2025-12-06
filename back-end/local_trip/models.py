@@ -79,3 +79,15 @@ class Trip:
             response_list.append(data)
 
         return response_list
+
+class Location(models.Model):
+    name = models.CharField(max_length=200)
+    image_url = models.URLField(blank=True, null=True)
+
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+
+    radius = models.FloatField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
