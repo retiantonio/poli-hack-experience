@@ -11,12 +11,13 @@ from knox.models import AuthToken
 from .serializers import (
     LoginSerializer,
     RegistrationSerializer,
-    UserDataSerializer
+    UserDataSerializer, LocationSerializer
 )
 
 import math
 
-from .models import ObjectiveNode, MapNode, Trip
+from .models import ObjectiveNode, MapNode, Trip, Location
+from .users.models import SellerProfile, CustomUser
 
 
 # Create your views here.
@@ -24,16 +25,19 @@ from .models import ObjectiveNode, MapNode, Trip
 @api_view(['GET'])
 def get_optimized_route(request):
     # Get from Flutter
-    city = request.GET.get('city', 'Sibiu')
+    city = request.GET.get('city', 'Brasov')
 
-    vendors = [
-        (45.7977, 24.1512),  # Kulinarium Restaurant (Piața Mică) - A good "Vendor" location
-        (45.7965, 24.1518),  # The Large Square (Piața Mare) - Central Landmark
-        (45.7976, 24.1521),  # The Council Tower (Turnul Sfatului)
-    ]
+    vendor_data_queryset = SellerProfile.objects.exclude(
+        latitude__isnull=True
+    ).exclude(
+        longitude__isnull=True
+    )
 
     pois_generator = PoisGenerator("User", city)
-    mixed_stops = pois_generator.extract_pois(vendors, radius=500, limit=10)
+    mixed_stops = pois_generator.extract_pois(vendor_data_queryset[:6], radius=500, limit=20)
+
+    for elem in mixed_stops:
+        print(elem.get_type)
 
     if not mixed_stops:
         return Response({"error": "No data found"}, status=404)
@@ -58,6 +62,13 @@ class RegisterAPI(generics.GenericAPIView):
     serializer_class = RegistrationSerializer
 
     def post(self, request, *args, **kwargs):
+        # === DEBUGGING START ===
+        print("------------------------------------------------")
+        print("📢 RECEIVED REQUEST DATA:")
+        print(request.data)  # This prints the parsed JSON as a Python dict
+        print("------------------------------------------------")
+        # === DEBUGGING END ===
+
         # 1. Validate Input (The 'Bouncer' check)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -126,3 +137,8 @@ class UserProfileAPI(generics.RetrieveAPIView):
     def get_object(self):
         # Automatically looks up the user associated with the token in the header
         return self.request.user
+
+    # 4. LOCATION DATA API (For Persistance)
+class LocationListAPI(generics.ListAPIView):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer

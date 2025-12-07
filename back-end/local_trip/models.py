@@ -48,7 +48,7 @@ class VendorNode(MapNode):
     def get_type(self):
         return "Vendor"
 
-class Trip:
+class Trip():
     def __init__(self, route):
         self.route = route
 
@@ -69,13 +69,36 @@ class Trip:
             data = node.to_json()
 
             # THE KEY FEATURE: Mark the current node
-            if i == self.current_index:
-                data['status'] = 'current'
-            elif i < self.current_index:
-                data['status'] = 'completed'
-            else:
-                data['status'] = 'locked'
+            # if i == self.current_index:
+            #     data['status'] = 'current'
+            # elif i < self.current_index:
+            #     data['status'] = 'completed'
+            # else:
+            #     data['status'] = 'locked'
 
             response_list.append(data)
 
         return response_list
+
+class TripModel(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, primary_key=True)
+
+    route_data = models.JSONField(
+        help_text="The trip to_json() method"
+    )
+
+    def __str__(self):
+        return f"Trip for {self.user.username}"
+
+
+class Location(models.Model):
+    name = models.CharField(max_length=200)
+    image_url = models.URLField(blank=True, null=True)
+
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+
+    radius = models.FloatField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name

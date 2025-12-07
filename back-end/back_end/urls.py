@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from local_trip import views
-from local_trip.views import RegisterAPI, LoginAPI, UserProfileAPI
+from local_trip.views import RegisterAPI, LoginAPI, UserProfileAPI, LocationListAPI
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +25,7 @@ urlpatterns = [
     path('register/', RegisterAPI.as_view(), name='register'),
     path('login/', LoginAPI.as_view(), name='login'),
     path('user/', UserProfileAPI.as_view(), name='user_data'),
+    path('locations/', LocationListAPI.as_view(), name='locations'),
 ]
+
+
