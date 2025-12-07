@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart'; 
+import 'package:frontend/pages/login_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -14,10 +16,56 @@ class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _signUp() {
-    if (_formKey.currentState!.validate()) {
+  void _signUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final registrationData = {
+      "username": _usernameController.text.trim(),
+      "email": _emailController.text.trim(),
+      "password": _passwordController.text.trim(),
+      "role": "TOURIST",
+    };
+
+    final url = Uri.parse("http://172.20.10.2:8000/register/");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(registrationData),
+      );
+
+      print("Status: ${response.statusCode}");
+      print("Body: ${response.body}");
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Registration successful!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigare către Login după înregistrare
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+          (Route<dynamic> route) => false,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Oops! Something went wrong! Try again later"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signing up...')),
+        SnackBar(
+          content: Text("Connection error: $e"),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -35,6 +83,16 @@ class _SignUpPageState extends State<SignUpPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0C3B2E),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0C3B2E),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: Form(
@@ -72,9 +130,16 @@ class _SignUpPageState extends State<SignUpPage> {
                       hintStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const SizedBox(
                         width: 24,
-                        child: Icon(Icons.person, color: Colors.white70, size: 20),
+                        child: Icon(
+                          Icons.person,
+                          color: Colors.white70,
+                          size: 20,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.white),
@@ -85,7 +150,10 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                        borderSide: const BorderSide(
+                          color: Colors.white,
+                          width: 2,
+                        ),
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
@@ -112,9 +180,16 @@ class _SignUpPageState extends State<SignUpPage> {
                       hintStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const SizedBox(
                         width: 24,
-                        child: Icon(Icons.email, color: Colors.white70, size: 20),
+                        child: Icon(
+                          Icons.email,
+                          color: Colors.white70,
+                          size: 20,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.white),
@@ -125,7 +200,10 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                        borderSide: const BorderSide(
+                          color: Colors.white,
+                          width: 2,
+                        ),
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
@@ -133,7 +211,9 @@ class _SignUpPageState extends State<SignUpPage> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter email';
                       }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      if (!RegExp(
+                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                      ).hasMatch(value)) {
                         return 'Enter a valid email';
                       }
                       return null;
@@ -155,9 +235,16 @@ class _SignUpPageState extends State<SignUpPage> {
                       hintStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const SizedBox(
                         width: 24,
-                        child: Icon(Icons.vpn_key, color: Colors.white70, size: 20),
+                        child: Icon(
+                          Icons.vpn_key,
+                          color: Colors.white70,
+                          size: 20,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.white),
@@ -168,7 +255,10 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white, width: 2),
+                        borderSide: const BorderSide(
+                          color: Colors.white,
+                          width: 2,
+                        ),
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
@@ -204,10 +294,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF6D9773),
-                            Color(0xFFA7C0AB),
-                          ],
+                          colors: [Color(0xFF6D9773), Color(0xFFA7C0AB)],
                         ),
                       ),
                       child: InkWell(
@@ -218,7 +305,10 @@ class _SignUpPageState extends State<SignUpPage> {
                           child: Center(
                             child: Text(
                               'Sign Up',
-                              style: TextStyle(color: Colors.white, fontSize: 18),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
                         ),

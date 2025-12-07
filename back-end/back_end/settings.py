@@ -25,9 +25,7 @@ SECRET_KEY = 'django-insecure-bswrsr65_f7%3zarwh18%wc*w=-(&*o*$53_xjee)@x0_&e@cq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    "10.85.82.166",
-]
+ALLOWED_HOSTS = ['*', '10.42.2.49', '127.0.0.1', 'localhost']
 
 # Application definition
 INSTALLED_APPS = [
@@ -37,9 +35,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'rest_framework',
     'local_trip',
+
+    'knox',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +53,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'back_end.urls'
+
+AUTH_USER_MODEL = 'local_trip.CustomUser'
 
 TEMPLATES = [
     {
@@ -78,8 +80,12 @@ WSGI_APPLICATION = 'back_end.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'my_flutter_db',  # <--- The name you just created
+        'USER': 'root',           # Your MySQL username
+        'PASSWORD': '13072004',   # Your MySQL password
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
@@ -114,8 +120,20 @@ USE_I18N = True
 
 USE_TZ = True
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True  # pentru testare; poți pune CORS_ALLOWED_ORIGINS = ['http://IP_FLUTTER:PORT']

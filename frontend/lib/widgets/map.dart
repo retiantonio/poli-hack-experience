@@ -17,8 +17,13 @@ class WaypointDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final popupColor = isProducer ? Colors.orange[700] : Colors.green[400];
-    final gradientColors = [Colors.amber, Colors.yellow];
+    final popupColor = isProducer
+        ? Color.fromARGB(255, 124, 72, 15)
+        : Color.fromARGB(255, 12, 58, 45);
+    final gradientColors = [
+      Color.fromARGB(255, 178, 107, 27),
+      Color.fromARGB(255, 252, 184, 1),
+    ];
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -137,8 +142,12 @@ class MapButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final frontColor = isProducer ? Colors.deepOrange : Colors.green;
-    final backColor = isProducer ? Colors.orange[800] : Colors.green[800];
+    final frontColor = isProducer
+        ? Colors.deepOrange
+        : Color.fromARGB(255, 108, 151, 114);
+    final backColor = isProducer
+        ? Colors.orange[800]
+        : Color.fromARGB(255, 11, 58, 44);
 
     return Stack(
       alignment: Alignment.center,

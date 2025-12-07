@@ -3,7 +3,7 @@ import pandas as pd
 
 from geopy.distance import geodesic
 
-from local_trip.models import VendorNode
+from local_trip.models import VendorNode, ObjectiveNode, MapNode
 
 
 class PoisGenerator:
@@ -44,32 +44,37 @@ class PoisGenerator:
                 gdf = ox.features_from_point(point, tags=tags, dist=radius)
 
                 for index, row in gdf.iterrows():
-                    # Handle geometry (Points vs Polygons)
+                    # Geometry check
                     if row.geometry.geom_type == 'Point':
                         lat, lon = row.geometry.y, row.geometry.x
                     else:
                         lat, lon = row.geometry.centroid.y, row.geometry.centroid.x
 
-                    name = row.get('name', 'Unknown')
+                    name = row.get('name', 'Unknown Spot')
 
-                    all_pois.append({
-                        "name": row.get('name', 'Unknown'),
-                        "type": row.get('amenity'),
-                        "lat": lat,
-                        "lon": lon,
-                    })
+                    # Deduplication check
+                    if name in seen_names or name == 'Unknown':
+                        continue
+
+                    # Determine description based on the tag found
+
+                    # Create Object
+                    node = ObjectiveNode(
+                        name = name,
+                        lat = lat,
+                        lon = lon,
+                        description=f"kngfgkfgkdfngkfdgkvmkdf[ngksfg",
+                        osm_id = f"osm_{index}",  # Or use row.osmid if available
+                        picture_url = "https://example.com/nature_placeholder.png"
+                    )
+
+                    all_pois.append(node)
                     seen_names.add(name)
 
             except Exception as e:
                 print(f"No data found near point {point}: {e}")
 
-        # Remove Duplicates
-        df = pd.DataFrame(all_pois)
-        if not df.empty:
-            df = df.drop_duplicates(subset=['lat', 'lon'])
-            return df.head(10).to_dict('records')
-
-        return []
+        return all_pois[:limit]
 
 class RouteOptimizer:
     def __init__(self, start_point, end_point, intermediate_points):
@@ -109,10 +114,9 @@ class RouteOptimizer:
         return geodesic(c1, c2).meters
 
     def _get_coords(self, obj):
-        if isinstance(obj, tuple):
-            return obj
-        elif isinstance(obj, dict):
-            return (obj['lat'], obj['lon'])
-        else:
-            return (obj.geometry.y, obj.geometry.x)
+        if isinstance(obj, MapNode):
+            return obj.lat, obj.lon
+
+        return None
+
 

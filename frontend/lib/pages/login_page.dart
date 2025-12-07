@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/pages/scrollable_producers.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:frontend/main.dart';
+import 'package:frontend/pages/signup_choice_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -57,7 +58,22 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
 
-        Navigator.pop(context, true); // trimitem true la MainMenu
+        // Navigare către MainMenu și resetarea stack-ului
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ScrollableBoxesPage(),
+          ), // <--- aici pui pagina ta principală
+          (Route<dynamic> route) => false,
+        );
+      } else {
+        // optional: mesaj pentru login eșuat
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Oops! Something went wrong! Try again later"),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -74,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
   void _goToSignUp() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => Placeholder()),
+      MaterialPageRoute(builder: (context) => SignUpChoicePage()),
     );
   }
 
@@ -88,10 +104,7 @@ class _LoginPageState extends State<LoginPage> {
       appBar: AppBar(
         title: const Text("Login"),
         backgroundColor: const Color(0xFF0C3B2E),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: SingleChildScrollView(
