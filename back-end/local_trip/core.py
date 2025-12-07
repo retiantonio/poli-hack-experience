@@ -1,5 +1,9 @@
+import math
+
 import osmnx as ox
 import pandas as pd
+
+import wikipedia
 
 from geopy.distance import geodesic
 
@@ -11,25 +15,28 @@ class PoisGenerator:
         self.user = user
         self.chosen_city = chosen_city
 
-    def extract_pois(self, vendor_coordinates, radius = 500, limit = 10):
+    def extract_pois(self, vendors, radius = 500, limit = 20):
         all_pois = []
         seen_names = set()
 
-        for i, v_point in enumerate(vendor_coordinates):
-            vendor_name = f"Vendor Location {i + 1}"
+        city_lat, city_lon = ox.geocode(self.chosen_city)
+
+        for i, vendor in enumerate(vendors):
+            vendor_name = vendor.user.username
 
             vendor_node = VendorNode(
                 name = vendor_name,
-                lat = v_point[0],
-                lon = v_point[1],
+                lat = float(vendor.latitude),
+                lon = float(vendor.longitude),
 
-                description = "nvjfdbvjdniodsnifos!",
+                description = vendor.description,
                 osm_id= f"v_{i}",
                 picture_url= "mbnfdnbdfbfkbmfc"
             )
 
-            all_pois.append(vendor_node)
-            seen_names.add(vendor_name)
+            if self._calc_dist((city_lat, city_lon), vendor_node) < 10000:
+                all_pois.append(vendor_node)
+                seen_names.add(vendor_name)
 
         # Tags
         tags = {
@@ -37,6 +44,10 @@ class PoisGenerator:
             'tourism': ['artwork', 'museum', 'viewpoint'],
             'historic': ['monument', 'memorial']
         }
+
+        vendor_coordinates = []
+        for elem in all_pois:
+            vendor_coordinates.append((elem.lat, elem.lon))
 
         for i, point in enumerate(vendor_coordinates):
             try:
@@ -56,16 +67,30 @@ class PoisGenerator:
                     if name in seen_names or name == 'Unknown':
                         continue
 
-                    # Determine description based on the tag found
+                    if isinstance(name, float) and math.isnan(name):
+                        continue
+
+                    wiki_tag = row.get('wikipedia')
+                    wiki_description, wiki_image = self._fetch_wiki_data(wiki_tag)
+
+                    if wiki_description:
+                        final_description = wiki_description
+                        final_image_url = wiki_image
+                    else:
+                        poi_type = row.get('amenity') or row.get('tourism') or row.get(
+                            'historic') or "General attraction"
+                        final_description = f"A prominent {poi_type} in the area."
+                        final_image_url = "https://placehold.co/600x400?text=Sightseeing"
+
 
                     # Create Object
                     node = ObjectiveNode(
                         name = name,
                         lat = lat,
                         lon = lon,
-                        description=f"kngfgkfgkdfngkfdgkvmkdf[ngksfg",
-                        osm_id = f"osm_{index}",  # Or use row.osmid if available
-                        picture_url = "https://example.com/nature_placeholder.png"
+                        description = final_description,
+                        osm_id = f"osm_{index}",
+                        picture_url = final_image_url,
                     )
 
                     all_pois.append(node)
@@ -75,6 +100,58 @@ class PoisGenerator:
                 print(f"No data found near point {point}: {e}")
 
         return all_pois[:limit]
+
+    def _fetch_wiki_data(self, wiki_tag):
+        """Fetches summary and image URL from Wikipedia using the OSM tag."""
+        if not wiki_tag:
+            return None, None
+
+        try:
+            # 1. Parse the tag (e.g., "en:Council Tower, Sibiu" -> "Council Tower, Sibiu")
+            # We assume the default language in the OSM tag if it exists
+            parts = wiki_tag.split(':')
+            if len(parts) > 1:
+                title = parts[-1].strip()
+            else:
+                title = wiki_tag.strip()
+
+            # 2. Get the Wikipedia page object
+            page = wikipedia.page(title, auto_suggest=False, redirect=True)
+
+            # 3. Extract data
+            description = page.summary
+            image_url = page.images[0] if page.images else None  # Get the first image
+
+            # Limit description length for mobile display
+            if len(description) > 300:
+                description = description[:300] + "..."
+
+            return description, image_url
+
+        except wikipedia.exceptions.PageError:
+            # Page not found on Wikipedia
+            return None, None
+        except wikipedia.exceptions.DisambiguationError:
+            # Ambiguous search term
+            return None, None
+        except Exception:
+            # General connection error, etc.
+            return None, None
+
+        # Calculate distance between two points
+
+    def _calc_dist(self, obj1, obj2):
+        c1 = self._get_coords(obj1)
+        c2 = self._get_coords(obj2)
+        return geodesic(c1, c2).meters
+
+    def _get_coords(self, obj):
+        if isinstance(obj, MapNode):
+            return obj.lat, obj.lon
+        if isinstance(obj, tuple):
+            return obj
+        return None
+
 
 class RouteOptimizer:
     def __init__(self, start_point, end_point, intermediate_points):
@@ -116,7 +193,8 @@ class RouteOptimizer:
     def _get_coords(self, obj):
         if isinstance(obj, MapNode):
             return obj.lat, obj.lon
-
+        if isinstance(obj, tuple):
+            return obj
         return None
 
 

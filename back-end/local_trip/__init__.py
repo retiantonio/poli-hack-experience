@@ -1,0 +1,1 @@
+default_app_config = 'local_trip.apps.LocalTripConfig'

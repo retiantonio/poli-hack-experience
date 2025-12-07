@@ -6,8 +6,11 @@ from django.db import transaction
 
 from .models import Location
 from .users.models import CustomUser, SellerProfile, TouristProfile
+
+
+
 ######################################################
-# 1. LOGIN SERIALIZER (Input)
+    # 1. LOGIN SERIALIZER (Input)
 class LoginSerializer(serializers.Serializer):
     """
     Checks if the email and password match.
@@ -24,11 +27,19 @@ class LoginSerializer(serializers.Serializer):
             return {'user': user}
         raise serializers.ValidationError("Invalid Credentials")
 
+
+
 ########################################################################################
-# 2. REGISTRATION SERIALIZER (Input)
+    # 2. REGISTRATION SERIALIZER (Input)
 class RegistrationSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, min_length=8)
+
+    description = serializers.CharField(required=False, allow_blank=True)
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False)
+    phone_number = serializers.CharField(required=False, allow_blank=True)
+    product_type = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = CustomUser
@@ -53,8 +64,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
             # elif user.role == 'TOURIST':
         return user
 
+
+
 #############################################################################################
-# 3. OUTPUT
+    # 3. OUTPUT
 class SellerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = SellerProfile
@@ -82,8 +95,11 @@ class UserDataSerializer(serializers.ModelSerializer):
         elif instance.role == 'TOURIST':
             data.pop('seller_profile')  # Remove seller data for tourists
         return data
+
+
+
 ##################################################################
-# 4.Location Serializer
+    # 4.Location Serializer
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
